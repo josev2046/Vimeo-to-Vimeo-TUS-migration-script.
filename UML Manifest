@@ -4,9 +4,9 @@
 
 
 participant "Script" as S
-participant "Source Vimeo API" as V_src
+participant "Source Vimeo Project" as V_src
 database "Local Machine" as L
-participant "Destination Vimeo API" as V_dest
+participant "Destination Vimeo Project" as V_dest
 
 activate S
 note over S: Get all videos from source folder\n(handles pagination and sorts by name)
