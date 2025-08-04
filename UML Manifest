@@ -1,0 +1,51 @@
+@startuml
+!theme toy
+
+
+
+participant "Script" as S
+participant "Source Vimeo API" as V_src
+database "Local Machine" as L
+participant "Destination Vimeo API" as V_dest
+
+activate S
+note over S: Get all videos from source folder\n(handles pagination and sorts by name)
+S -> V_src: GET /me/projects/{src_folder_id}/videos
+activate V_src
+V_src --> S: Return list of video URIs
+deactivate V_src
+
+loop for each video_uri
+    S -> V_src: GET /videos/{video_uri}
+    activate V_src
+    V_src --> S: Return title and authenticated download_url
+    deactivate V_src
+
+    note over S: ***Local Download Starts***
+    S -> V_src: Stream video data from download_url
+    activate V_src
+    V_src --> S: Send video chunks
+    deactivate V_src
+    S -> L: Save file locally (e.g., to "temp_vimeo_downloads")
+    note over S: ***Local Download Ends***
+    
+    note over S: ***Upload Starts***
+    S -> V_dest: POST /me/videos with dest_token
+    activate V_dest
+    V_dest --> S: Return TUS upload ticket (upload_link)
+    
+    S -> V_dest: PATCH upload_link with local file
+    S -> V_dest: Stream file data
+    V_dest --> S: Return upload success
+    deactivate V_dest
+
+    S -> V_dest: PUT /me/projects/{dest_folder_id}/videos/{new_video_id}
+    activate V_dest
+    V_dest --> S: Return move success
+    deactivate V_dest
+    note over S: ***Upload Ends***
+
+    S -> L: os.remove(temp_file)
+end
+deactivate S
+@enduml
